@@ -60,7 +60,8 @@ struct UsageWidgetView: View {
                 usageSection(
                     label: "Week",
                     pct: data.weekPct,
-                    countdown: viewModel.weekCountdown
+                    countdown: viewModel.weekCountdown,
+                    daysLeft: viewModel.weekDaysLeft
                 )
 
                 if viewModel.showLastUpdated {
@@ -111,7 +112,7 @@ struct UsageWidgetView: View {
     }
 
     @ViewBuilder
-    private func usageSection(label: String, pct: Int?, countdown: String?) -> some View {
+    private func usageSection(label: String, pct: Int?, countdown: String?, daysLeft: Int? = nil) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack {
                 Text(label)
@@ -119,16 +120,20 @@ struct UsageWidgetView: View {
                     .foregroundColor(.primary)
                 Spacer()
                 if let pct {
+                    let color = daysLeft != nil
+                        ? Config.weeklyUsageColor(pct: pct, daysLeft: daysLeft)
+                        : Config.usageColor(for: pct)
                     Text("\(pct)%")
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .foregroundColor(Config.usageColor(for: pct))
+                        .foregroundColor(color)
                 }
             }
             if let pct {
-                ProgressBarView(percentage: pct)
+                ProgressBarView(percentage: pct, daysLeft: daysLeft)
             }
             if let countdown {
-                Text("Resets in \(countdown)")
+                let prefix = daysLeft != nil ? "Day" : "Resets in"
+                Text("\(prefix) \(countdown)")
                     .font(.system(size: 10))
                     .foregroundColor(.secondary)
             }

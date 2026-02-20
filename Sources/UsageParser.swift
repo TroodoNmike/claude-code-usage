@@ -106,8 +106,8 @@ enum UsageParser {
         return "\(totalMinutes)m"
     }
 
-    /// Parse "Feb 25 at 7am (Europe/Warsaw)" -> "5d"
-    static func daysUntilReset(_ resetStr: String) -> String? {
+    /// Parse "Feb 25 at 7am (Europe/Warsaw)" -> days left as Int
+    static func daysLeftUntilReset(_ resetStr: String) -> Int? {
         let clean = resetStr.replacing(/\s*\(.*?\)\s*$/, with: "")
         let datePattern = /([A-Z][a-z]{2}\s+\d{1,2})/
         guard let match = clean.firstMatch(of: datePattern) else { return nil }
@@ -131,7 +131,12 @@ enum UsageParser {
             resetDate = nextYear
         }
 
-        let days = cal.dateComponents([.day], from: today, to: resetDate).day ?? 0
-        return "\(days)d"
+        return cal.dateComponents([.day], from: today, to: resetDate).day ?? 0
+    }
+
+    /// Format days left as "3/7" (current day of cycle)
+    static func weekDayLabel(daysLeft: Int) -> String {
+        let dayNumber = 7 - daysLeft + 1
+        return "\(dayNumber)/7"
     }
 }

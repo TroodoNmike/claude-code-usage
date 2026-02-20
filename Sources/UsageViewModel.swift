@@ -11,6 +11,7 @@ final class UsageViewModel: ObservableObject {
     @Published var state: State = .loading("Starting Claude...")
     @Published var sessionCountdown: String?
     @Published var weekCountdown: String?
+    @Published var weekDaysLeft: Int?
     @Published var lastUpdatedAgo: String = ""
     @Published var isPinned = true
 
@@ -144,7 +145,10 @@ final class UsageViewModel: ObservableObject {
             sessionCountdown = UsageParser.timeUntilSessionReset(raw)
         }
         if let raw = data.weekResetRaw {
-            weekCountdown = UsageParser.daysUntilReset(raw)
+            if let days = UsageParser.daysLeftUntilReset(raw) {
+                weekDaysLeft = days
+                weekCountdown = UsageParser.weekDayLabel(daysLeft: days)
+            }
         }
     }
 

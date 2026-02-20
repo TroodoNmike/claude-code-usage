@@ -17,4 +17,12 @@ enum Config {
         if pct >= 50 { return Color(red: 1.0, green: 0.78, blue: 0.0) }
         return Color(red: 0.0, green: 0.78, blue: 0.39)
     }
+
+    static func weeklyUsageColor(pct: Int, daysLeft: Int?) -> Color {
+        guard let daysLeft else { return usageColor(for: pct) }
+        let expected = Double(7 - daysLeft + 1) / 7.0 * 100.0
+        if Double(pct) >= expected + 20 { return Color(red: 1.0, green: 0.24, blue: 0.24) }
+        if Double(pct) >= expected { return Color(red: 1.0, green: 0.78, blue: 0.0) }
+        return Color(red: 0.0, green: 0.78, blue: 0.39)
+    }
 }
