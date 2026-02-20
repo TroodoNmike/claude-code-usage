@@ -42,11 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Sync dark mode to panel appearance — sole source of truth for color scheme
         viewModel.$forceDarkMode.sink { [weak self] dark in
             guard let panel = self?.panel else { return }
-            let appearance = dark ? NSAppearance(named: .darkAqua) : NSAppearance(named: .aqua)
-            panel.appearance = appearance
-            panel.contentView?.appearance = appearance
-            panel.invalidateShadow()
-            panel.displayIfNeeded()
+            panel.appearance = dark ? NSAppearance(named: .darkAqua) : NSAppearance(named: .aqua)
         }.store(in: &cancellables)
 
         // Update menu bar when state, style, or countdowns change

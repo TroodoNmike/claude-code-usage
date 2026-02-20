@@ -26,13 +26,14 @@ actor TmuxManager {
     }
 
     func createUsageSession() async {
-        await runTmux(
+        let (rc, _, _) = await runTmux(
             "new-session", "-d", "-s", sessionName,
             "-x", String(Config.tmuxPaneWidth),
             "-y", String(Config.tmuxPaneHeight)
         )
+        guard rc == 0 else { return }
         await runTmux("send-keys", "-t", sessionName, "claude", "Enter")
-        await waitForClaudeReady()
+        guard await waitForClaudeReady() else { return }
         await runTmux("send-keys", "-t", sessionName, "/usage")
         try? await Task.sleep(for: .milliseconds(500))
         await runTmux("send-keys", "-t", sessionName, "Enter")
@@ -56,17 +57,19 @@ actor TmuxManager {
 
     // MARK: - Private
 
-    private func waitForClaudeReady(timeout: TimeInterval = 30, poll: TimeInterval = 1.0) async {
+    @discardableResult
+    private func waitForClaudeReady(timeout: TimeInterval = 30, poll: TimeInterval = 1.0) async -> Bool {
         var elapsed: TimeInterval = 0
         while elapsed < timeout {
             let lines = await capturePane()
             let text = lines.joined(separator: " ")
             if text.contains("\u{273B}") || text.lowercased().contains("claude code") {
-                return
+                return true
             }
             try? await Task.sleep(for: .milliseconds(Int(poll * 1000)))
             elapsed += poll
         }
+        return false
     }
 
     @discardableResult
@@ -74,27 +77,32 @@ actor TmuxManager {
         guard let tmuxPath = TmuxManager.findTmuxPath() else {
             return (-1, "", "tmux not found")
         }
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: tmuxPath)
-        process.arguments = Array(args)
+        let argsCopy = Array(args)
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: tmuxPath)
+                process.arguments = argsCopy
 
-        let stdoutPipe = Pipe()
-        let stderrPipe = Pipe()
-        process.standardOutput = stdoutPipe
-        process.standardError = stderrPipe
+                let stdoutPipe = Pipe()
+                let stderrPipe = Pipe()
+                process.standardOutput = stdoutPipe
+                process.standardError = stderrPipe
 
-        do {
-            try process.run()
-            process.waitUntilExit()
-            let stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-            let stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
-            return (
-                process.terminationStatus,
-                String(data: stdoutData, encoding: .utf8) ?? "",
-                String(data: stderrData, encoding: .utf8) ?? ""
-            )
-        } catch {
-            return (-1, "", error.localizedDescription)
+                do {
+                    try process.run()
+                    process.waitUntilExit()
+                    let stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
+                    let stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+                    continuation.resume(returning: (
+                        process.terminationStatus,
+                        String(data: stdoutData, encoding: .utf8) ?? "",
+                        String(data: stderrData, encoding: .utf8) ?? ""
+                    ))
+                } catch {
+                    continuation.resume(returning: (-1, "", error.localizedDescription))
+                }
+            }
         }
     }
 }

@@ -56,16 +56,20 @@ final class UsageViewModel: ObservableObject {
     func refresh() {
         guard !isRefreshing else { return }
         isRefreshing = true
-        pollTask?.cancel()
-        countdownTask?.cancel()
         cachedData = nil
         state = .loading("Restarting Claude...")
         Task {
+            pollTask?.cancel()
+            await pollTask?.value
+            pollTask = nil
+            countdownTask?.cancel()
+            await countdownTask?.value
+            countdownTask = nil
+
             await tmux.killSession()
             try? await Task.sleep(for: .seconds(0.5))
-            pollTask = Task { await pollLoop() }
-            countdownTask = Task { await countdownLoop() }
-            isRefreshing = false
+            pollTask = Task { await self.pollLoop() }
+            countdownTask = Task { await self.countdownLoop() }
         }
     }
 
@@ -80,10 +84,11 @@ final class UsageViewModel: ObservableObject {
 
     func stop() {
         pollTask?.cancel()
+        pollTask = nil
         countdownTask?.cancel()
-        Task {
-            await tmux.killSession()
-        }
+        countdownTask = nil
+        let tmux = self.tmux
+        Task { await tmux.killSession() }
     }
 
     // MARK: - Polling
@@ -96,6 +101,7 @@ final class UsageViewModel: ObservableObject {
         }
 
         await refreshAndCapture()
+        if isRefreshing { isRefreshing = false }
 
         while !Task.isCancelled {
             try? await Task.sleep(for: .seconds(Config.usagePollInterval))

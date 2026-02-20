@@ -22,7 +22,7 @@ enum UsageParser {
 
         for (i, line) in lines.enumerated() {
             if let match = line.firstMatch(of: pctPattern) {
-                let pct = Int(match.1)!
+                guard let pct = Int(match.1) else { continue }
                 let contextRange = max(0, i - 3)...i
                 let context = lines[contextRange].joined(separator: " ").lowercased()
                 if context.contains("session") && result.sessionPct == nil {
@@ -66,8 +66,9 @@ enum UsageParser {
         let timePattern = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)/
         guard let match = clean.firstMatch(of: timePattern) else { return nil }
 
-        var hour = Int(match.1)!
-        let minute = match.2.map { Int($0)! } ?? 0
+        guard let parsedHour = Int(match.1) else { return nil }
+        var hour = parsedHour
+        let minute = match.2.flatMap { Int($0) } ?? 0
         let ampm = String(match.3).lowercased()
 
         if ampm == "pm" && hour != 12 { hour += 12 }
@@ -91,7 +92,8 @@ enum UsageParser {
 
         guard var resetTime = cal.date(from: components) else { return nil }
         if resetTime <= now {
-            resetTime = cal.date(byAdding: .day, value: 1, to: resetTime)!
+            guard let next = cal.date(byAdding: .day, value: 1, to: resetTime) else { return nil }
+            resetTime = next
         }
 
         let diff = resetTime.timeIntervalSince(now)
@@ -120,11 +122,13 @@ enum UsageParser {
         let today = cal.startOfDay(for: Date())
         var comps = cal.dateComponents([.month, .day], from: resetDate)
         comps.year = cal.component(.year, from: today)
-        resetDate = cal.date(from: comps)!
+        guard let dated = cal.date(from: comps) else { return nil }
+        resetDate = dated
 
         if resetDate < today {
             comps.year = cal.component(.year, from: today) + 1
-            resetDate = cal.date(from: comps)!
+            guard let nextYear = cal.date(from: comps) else { return nil }
+            resetDate = nextYear
         }
 
         let days = cal.dateComponents([.day], from: today, to: resetDate).day ?? 0
