@@ -52,6 +52,29 @@ struct UsageWidgetView: View {
                 }
                 Spacer()
 
+            case .notAuthenticated:
+                Spacer()
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "person.crop.circle.badge.exclamationmark")
+                            .font(.system(size: 24))
+                            .foregroundColor(.orange)
+                        Text("Not logged in")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.primary)
+                        Text("Run `claude` then `/login`")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                        Button("Reload") { viewModel.refresh() }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.accentColor)
+                    }
+                    Spacer()
+                }
+                Spacer()
+
             case .loaded(let data):
                 usageSection(
                     label: "Session",

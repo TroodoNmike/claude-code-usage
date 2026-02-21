@@ -1,17 +1,22 @@
 # Claude Code Usage Widget
 
-A macOS menu bar widget that monitors your [Claude Code](https://claude.ai/code) API usage in real time. Displays session and weekly quota percentages with countdown timers in a floating always-on-top panel.
+A macOS menu bar widget that monitors your [Claude Code](https://claude.ai/code) usage in real time. Displays session and weekly quota percentages with countdown timers in a floating always-on-top panel.
 
 <!-- ![Demo](demo.gif) -->
 
 ## ✨ Features
 
-- 📊 **Session & weekly usage monitoring** — polls Claude Code's `/usage` command automatically
+- 📊 **Session & weekly usage monitoring** — polls Claude Code's `/usage` command automatically with manual refresh
 - 🎨 **Pace-based color coding** — weekly usage color reflects whether you're ahead or behind expected pace in the billing cycle
-- ⏱️ **Countdown timers** — live countdowns to session and weekly quota resets
-- 🪟 **Floating panel** — always-on-top window so usage stays visible while you work
-- ⚙️ **Custom status bar formats** — configurable menu bar display
+- ⏱️ **Countdown timers** — live countdowns to session and weekly quota resets, with full reset datetime display
+- 📏 **Progress bars** — visual progress bars for both session and weekly usage
+- 🪟 **Floating panel** — always-on-top window with pin/unpin toggle and persistent position
+- 🔍 **Zoom controls** — scale the widget from 1.0x to 2.0x
+- ⚙️ **Custom status bar formats** — configurable menu bar display with 8 format variables
+- 🌗 **Dark mode toggle** — switch between light and dark appearance
+- ⌨️ **Global shortcut** — toggle widget visibility with `Cmd+Shift+U`
 - 🖥️ **Menu bar integration** — quick access via macOS status bar with quit menu
+- 🕐 **Last updated timestamp** — optional "Updated X seconds ago" display
 
 <div>
   <img src="docs/assets/menubar-detailed.png" alt="Menubar with times" width="920" />
@@ -24,6 +29,7 @@ A macOS menu bar widget that monitors your [Claude Code](https://claude.ai/code)
 - macOS 14.0+
 - [tmux](https://github.com/tmux/tmux) installed and on your `PATH`
 - [Claude Code CLI](https://claude.ai/code) installed and authenticated
+- An Anthropic account on a **Pro**, **Max**, **Team**, or **Enterprise** plan
 
 ### Installing tmux
 
@@ -61,14 +67,32 @@ The widget uses an **MVVM architecture** with **Swift 6 structured concurrency**
 
 Color coding uses fixed thresholds for session usage (green < 50%, orange 50–79%, red 80%+) and pace-based logic for weekly usage that compares actual usage against expected usage for the current day in the billing cycle.
 
+## ⚙️ Custom Status Bar Formats
+
+The menu bar display is configurable via the options panel. Choose a preset style or define a custom format using these variables:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `{s}` | Session usage % | `42%` |
+| `{w}` | Weekly usage % | `65%` |
+| `{sr}` | Session reset countdown | `2h 15m` |
+| `{wr}` | Weekly reset countdown | `3d 12h` |
+| `{wd}` | Days elapsed in billing cycle | `4` |
+| `{wl}` | Days left in billing cycle | `3` |
+| `{srt}` | Session reset datetime | `Feb 21, 2:00pm` |
+| `{wrt}` | Weekly reset datetime | `Feb 24, 12:00am` |
+
+Example custom format: `S:{s} W:{w} ({wl}d left)`
+
 ## 🛠️ Build Commands
 
-| Command      | Description                |
-|-------------|----------------------------|
-| `make build` | Compile the project        |
-| `make run`   | Build and run the widget   |
-| `make test`  | Run unit tests             |
-| `make clean` | Remove build artifacts     |
+| Command       | Description                |
+|--------------|----------------------------|
+| `make build`  | Compile the project        |
+| `make run`    | Build and run the widget   |
+| `make test`   | Run unit tests             |
+| `make clean`  | Remove build artifacts     |
+| `make reset`  | Reset saved preferences    |
 
 ## 🤝 Contributing
 

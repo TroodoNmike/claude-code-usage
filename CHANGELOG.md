@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.6] - 2026-02-21
+
+### Added
+
+- Login detection with "Not logged in" screen and reload button
+- Loading timeout — shows error with retry after 60 seconds of no data
+- Persistent window position saved across launches
+- Demo gif in project assets
+
+### Changed
+
+- Updated README to document all features, custom format variables, and build commands
+- CI runner upgraded to macOS 15
+
 ## [1.0.5] - 2026-02-21
 
 ### Added

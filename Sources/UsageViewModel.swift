@@ -5,6 +5,7 @@ final class UsageViewModel: ObservableObject {
     enum State: Sendable {
         case loading(String)
         case loaded(UsageData)
+        case notAuthenticated
         case error(String)
     }
 
@@ -147,11 +148,13 @@ final class UsageViewModel: ObservableObject {
     private var countdownTask: Task<Void, Never>?
     private var lastUpdateTime: Date?
     private var cachedData: UsageData?
+    private var loadingStartTime: Date?
 
     func refresh() {
         guard !isRefreshing else { return }
         isRefreshing = true
         cachedData = nil
+        loadingStartTime = nil
         state = .loading("Restarting Claude...")
         Task {
             pollTask?.cancel()
@@ -210,13 +213,27 @@ final class UsageViewModel: ObservableObject {
         try? await Task.sleep(for: .seconds(Config.usageRefreshDelay))
         let lines = await tmux.capturePane()
 
+        if UsageParser.isLoginScreen(lines) {
+            state = .notAuthenticated
+            loadingStartTime = nil
+            return
+        }
+
         if UsageParser.isUsageScreen(lines), let data = UsageParser.parse(lines) {
             cachedData = data
             lastUpdateTime = Date()
+            loadingStartTime = nil
             state = .loaded(data)
             updateCountdowns(from: data)
         } else if cachedData == nil {
-            state = .loading("Waiting for usage data...")
+            if loadingStartTime == nil {
+                loadingStartTime = Date()
+            }
+            if let start = loadingStartTime, Date().timeIntervalSince(start) > 60 {
+                state = .error("Usage data not available.\nTap Reload to retry.")
+            } else {
+                state = .loading("Waiting for usage data...")
+            }
         }
     }
 

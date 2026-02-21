@@ -118,6 +118,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let format = style == .custom ? customFormat : style.formatString
             let text = UsageViewModel.formatMenuBar(format, data: data, sessionCountdown: sessionCountdown, weekCountdown: weekCountdown, weekDaysLeft: weekDaysLeft, sessionResetDateTime: sessionResetDateTime, weekResetDateTime: weekResetDateTime)
             button.attributedTitle = NSAttributedString(string: text, attributes: [.font: font])
+        case .notAuthenticated:
+            button.title = "🔒"
         case .error:
             button.title = "⚠️"
         }

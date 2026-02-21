@@ -11,6 +11,11 @@ enum UsageParser {
     nonisolated(unsafe) private static let pctPattern = /(\d+)%\s*used/
     nonisolated(unsafe) private static let resetPattern = /Resets\s+(.+?)$/
 
+    static func isLoginScreen(_ lines: [String]) -> Bool {
+        let text = lines.joined(separator: " ")
+        return text.contains("Select login method")
+    }
+
     static func isUsageScreen(_ lines: [String]) -> Bool {
         let text = lines.joined(separator: " ")
         return text.contains("% used") && (text.lowercased().contains("session") || text.lowercased().contains("week"))
