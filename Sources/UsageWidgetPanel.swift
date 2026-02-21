@@ -15,7 +15,7 @@ final class UsageWidgetPanel: NSPanel {
                 width: Config.windowWidth,
                 height: Config.windowHeight
             ),
-            styleMask: [.titled, .closable, .nonactivatingPanel, .utilityWindow],
+            styleMask: [.titled, .closable, .resizable, .nonactivatingPanel, .utilityWindow],
             backing: .buffered,
             defer: false
         )
@@ -29,6 +29,9 @@ final class UsageWidgetPanel: NSPanel {
         titleVisibility = .hidden
         isOpaque = false
         backgroundColor = .windowBackgroundColor
+
+        minSize = NSSize(width: Config.windowWidth, height: Config.windowHeight)
+        maxSize = NSSize(width: 500, height: 500)
 
         // Restore last known position, or default to top-right corner
         if !setFrameAutosaveName("ClaudeUsagePanel") || !setFrameUsingName("ClaudeUsagePanel") {

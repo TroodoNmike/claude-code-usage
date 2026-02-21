@@ -96,6 +96,16 @@ final class UsageViewModel: ObservableObject {
     @Published var customFormat: String {
         didSet { UserDefaults.standard.set(customFormat, forKey: "customFormat") }
     }
+    @Published var zoomLevel: CGFloat {
+        didSet { UserDefaults.standard.set(Double(zoomLevel), forKey: "zoomLevel") }
+    }
+    @Published var showOptions: Bool {
+        didSet { UserDefaults.standard.set(showOptions, forKey: "showOptions") }
+    }
+
+    static let zoomMin: CGFloat = 1.0
+    static let zoomMax: CGFloat = 2.0
+    static let zoomStep: CGFloat = 0.25
 
     init() {
         let defaults = UserDefaults.standard
@@ -103,6 +113,9 @@ final class UsageViewModel: ObservableObject {
         self.showLastUpdated = defaults.object(forKey: "showLastUpdated") as? Bool ?? true
         self.statusBarStyle = StatusBarStyle(intValue: defaults.integer(forKey: "statusBarStyle"))
         self.customFormat = defaults.string(forKey: "customFormat") ?? "S:{s}% W:{w}%"
+        let stored = defaults.object(forKey: "zoomLevel") as? Double ?? 1.0
+        self.zoomLevel = min(max(CGFloat(stored), Self.zoomMin), Self.zoomMax)
+        self.showOptions = defaults.object(forKey: "showOptions") as? Bool ?? false
     }
 
     static func formatMenuBar(

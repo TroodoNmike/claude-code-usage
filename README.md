@@ -13,6 +13,11 @@ A macOS menu bar widget that monitors your [Claude Code](https://claude.ai/code)
 - ⚙️ **Custom status bar formats** — configurable menu bar display
 - 🖥️ **Menu bar integration** — quick access via macOS status bar with quit menu
 
+<div>
+  <img src="docs/assets/menubar-detailed.png" alt="Menubar with times" width="920" />
+  <img src="docs/assets/menubar-with-times.png" alt="Menubar with times" width="920" />
+</div>
+
 ## 📋 Requirements
 
 - macOS 14.0+
