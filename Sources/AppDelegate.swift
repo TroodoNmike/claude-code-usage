@@ -40,6 +40,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.panel.isPinned = pinned
         }.store(in: &cancellables)
 
+        // Auto-resize panel when options toggled
+        viewModel.$showOptions
+            .dropFirst()
+            .sink { [weak self] showOptions in
+                // Small delay so SwiftUI layout updates before we measure
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    guard let panel = self?.panel,
+                          let hostingView = panel.contentView as? NSHostingView<UsageWidgetView> else { return }
+                    hostingView.invalidateIntrinsicContentSize()
+                    let intrinsic = hostingView.intrinsicContentSize
+                    let targetHeight = max(intrinsic.height, Config.windowHeight)
+                    let frame = panel.frame
+
+                    // Only expand when showing, only collapse when hiding
+                    if showOptions && frame.height >= targetHeight { return }
+                    if !showOptions && frame.height <= targetHeight { return }
+
+                    let newOrigin = NSPoint(x: frame.origin.x, y: frame.origin.y + frame.height - targetHeight)
+                    panel.setFrame(NSRect(origin: newOrigin, size: NSSize(width: frame.width, height: targetHeight)), display: true, animate: true)
+                }
+            }
+            .store(in: &cancellables)
+
         // Sync dark mode to panel appearance — sole source of truth for color scheme
         viewModel.$forceDarkMode.sink { [weak self] dark in
             guard let panel = self?.panel else { return }
@@ -57,6 +80,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.updateStatusItemTitle(state: state, style: style, sessionCountdown: sessionCD, weekCountdown: weekCD, customFormat: customFormat, weekDaysLeft: weekDaysLeft, sessionResetDateTime: sessionRT, weekResetDateTime: weekRT)
             }
             .store(in: &cancellables)
+
+        // Global keyboard shortcut ⌘⇧U
+        NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.modifierFlags.contains([.command, .shift]) && event.charactersIgnoringModifiers == "u" {
+                DispatchQueue.main.async { self?.statusItemClicked() }
+            }
+        }
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.modifierFlags.contains([.command, .shift]) && event.charactersIgnoringModifiers == "u" {
+                DispatchQueue.main.async { self?.statusItemClicked() }
+                return nil
+            }
+            return event
+        }
 
         viewModel.start()
     }

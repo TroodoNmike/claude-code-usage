@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.5] - 2026-02-21
+
+### Added
+
+- Zoom controls for scaling the usage display
+- Collapsible options panel with grouped settings (Zoom, Other, Menu bar)
+- Auto-resize window when toggling the options panel
+- Resizable window with manual drag support
+- Chevron indicator on the options toggle button
+- Retry button on error state
+- Format reference popover for custom menu bar formats
+- Global keyboard shortcut (Cmd+Shift+U) to toggle widget
+
+### Changed
+
+- Improved README with emoji styling and tmux installation guide
+
 ## [1.0.4] - 2026-02-21
 
 ### Added

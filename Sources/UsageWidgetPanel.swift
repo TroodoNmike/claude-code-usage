@@ -30,8 +30,8 @@ final class UsageWidgetPanel: NSPanel {
         isOpaque = false
         backgroundColor = .windowBackgroundColor
 
-        minSize = NSSize(width: Config.windowWidth, height: Config.windowHeight)
-        maxSize = NSSize(width: 500, height: 500)
+        minSize = NSSize(width: Config.windowWidth, height: 100)
+        maxSize = NSSize(width: 500, height: 600)
 
         // Restore last known position, or default to top-right corner
         if !setFrameAutosaveName("ClaudeUsagePanel") || !setFrameUsingName("ClaudeUsagePanel") {

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct UsageWidgetView: View {
     @ObservedObject var viewModel: UsageViewModel
+    @State private var showFormatReference = false
     let onTogglePin: () -> Void
 
     var body: some View {
@@ -24,7 +25,7 @@ struct UsageWidgetView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(viewModel.isRefreshing)
-                .help("Restart tmux session")
+                .help("Refresh usage data")
                 Spacer()
                 Button(action: onTogglePin) {
                     Image(systemName: viewModel.isPinned ? "pin.fill" : "pin")
@@ -75,9 +76,13 @@ struct UsageWidgetView: View {
                 Spacer(minLength: 0)
 
                 Button(action: { viewModel.showOptions.toggle() }) {
-                    Text(viewModel.showOptions ? "Hide options" : "Show options")
-                        .font(.system(size: 10))
-                        .foregroundColor(.accentColor)
+                    HStack(spacing: 3) {
+                        Image(systemName: viewModel.showOptions ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 8, weight: .semibold))
+                        Text(viewModel.showOptions ? "Hide options" : "Show options")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundColor(.accentColor)
                 }
                 .buttonStyle(.plain)
 
@@ -87,11 +92,17 @@ struct UsageWidgetView: View {
 
             case .error(let message):
                 Spacer()
-                Text(message)
-                    .font(.system(size: 11))
-                    .foregroundColor(.red)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
+                VStack(spacing: 8) {
+                    Text(message)
+                        .font(.system(size: 11))
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                    Button("Retry") { viewModel.refresh() }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.accentColor)
+                }
                 Spacer()
             }
         }
@@ -139,46 +150,70 @@ struct UsageWidgetView: View {
 
     @ViewBuilder
     private var optionsSection: some View {
-        // Zoom controls
-        HStack(spacing: 8) {
-            Button(action: {
-                viewModel.zoomLevel = max(viewModel.zoomLevel - UsageViewModel.zoomStep, UsageViewModel.zoomMin)
-            }) {
-                Image(systemName: "minus.magnifyingglass")
-                    .font(.system(size: 11))
-                    .foregroundColor(viewModel.zoomLevel <= UsageViewModel.zoomMin ? .secondary.opacity(0.3) : .secondary)
-            }
-            .buttonStyle(.plain)
-            .disabled(viewModel.zoomLevel <= UsageViewModel.zoomMin)
-            .help("Zoom out")
-            Button(action: {
-                viewModel.zoomLevel = min(viewModel.zoomLevel + UsageViewModel.zoomStep, UsageViewModel.zoomMax)
-            }) {
-                Image(systemName: "plus.magnifyingglass")
-                    .font(.system(size: 11))
-                    .foregroundColor(viewModel.zoomLevel >= UsageViewModel.zoomMax ? .secondary.opacity(0.3) : .secondary)
-            }
-            .buttonStyle(.plain)
-            .disabled(viewModel.zoomLevel >= UsageViewModel.zoomMax)
-            .help("Zoom in")
-            Spacer()
-        }
-
-        // Settings row
-        HStack(spacing: 12) {
-            Toggle("Dark", isOn: $viewModel.forceDarkMode)
-            Toggle("Updated", isOn: $viewModel.showLastUpdated)
-        }
-        .toggleStyle(.switch)
-        .controlSize(.mini)
-        .font(.system(size: 10))
-        .foregroundColor(.secondary)
-
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 4) {
-                Text("Menu bar:")
-                    .font(.system(size: 10))
+        // Zoom group
+        VStack(spacing: 6) {
+            Text("Zoom")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 8) {
+                Button(action: {
+                    viewModel.zoomLevel = max(viewModel.zoomLevel - UsageViewModel.zoomStep, UsageViewModel.zoomMin)
+                }) {
+                    Image(systemName: "minus.magnifyingglass")
+                        .font(.system(size: 11))
+                        .foregroundColor(viewModel.zoomLevel <= UsageViewModel.zoomMin ? .secondary.opacity(0.3) : .secondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.zoomLevel <= UsageViewModel.zoomMin)
+                .help("Zoom out")
+                Text(String(format: "%.0f%%", viewModel.zoomLevel * 100))
+                    .font(.system(size: 10, design: .monospaced))
                     .foregroundColor(.secondary)
+                    .frame(width: 32)
+                Button(action: {
+                    viewModel.zoomLevel = min(viewModel.zoomLevel + UsageViewModel.zoomStep, UsageViewModel.zoomMax)
+                }) {
+                    Image(systemName: "plus.magnifyingglass")
+                        .font(.system(size: 11))
+                        .foregroundColor(viewModel.zoomLevel >= UsageViewModel.zoomMax ? .secondary.opacity(0.3) : .secondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.zoomLevel >= UsageViewModel.zoomMax)
+                .help("Zoom in")
+                Spacer()
+            }
+        }
+        .padding(6)
+        .background(Color.primary.opacity(0.04))
+        .cornerRadius(6)
+
+        // Other group
+        VStack(spacing: 6) {
+            Text("Other")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 12) {
+                Toggle("Dark mode", isOn: $viewModel.forceDarkMode)
+                Toggle("Last update", isOn: $viewModel.showLastUpdated)
+            }
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+            .font(.system(size: 10))
+            .foregroundColor(.secondary)
+        }
+        .padding(6)
+        .background(Color.primary.opacity(0.04))
+        .cornerRadius(6)
+
+        // Menu bar group
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Menu bar")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 4) {
                 Picker("", selection: $viewModel.statusBarStyle) {
                     ForEach(UsageViewModel.StatusBarStyle.allCases, id: \.self) { style in
                         Text(style.label).tag(style)
@@ -195,31 +230,66 @@ struct UsageWidgetView: View {
                         .font(.system(size: 9, design: .monospaced))
                         .foregroundColor(.secondary)
                     Spacer()
-                    Button("Customize") {
+                    Button(action: {
                         viewModel.customFormat = viewModel.statusBarStyle.formatString
                         viewModel.statusBarStyle = .custom
+                    }) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 8))
+                            Text("Customize")
+                                .font(.system(size: 9))
+                        }
+                        .foregroundColor(.accentColor)
                     }
                     .buttonStyle(.plain)
-                    .font(.system(size: 9))
-                    .foregroundColor(.accentColor)
                 }
             }
             if viewModel.statusBarStyle == .custom {
-                TextField("Format", text: $viewModel.customFormat)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 10, design: .monospaced))
-                    .padding(5)
-                    .background(Color.primary.opacity(0.08))
-                    .cornerRadius(5)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 5)
-                            .stroke(Color.primary.opacity(0.15), lineWidth: 1)
-                    )
-                Text("{s} session %  {w} week %\n{sr} session reset  {wr} week day\n{wd} days elapsed  {wl} days left\n{srt} session reset date  {wrt} week reset date")
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary)
-                    .lineSpacing(2)
+                HStack(spacing: 4) {
+                    TextField("Format", text: $viewModel.customFormat)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 10, design: .monospaced))
+                        .padding(5)
+                        .background(Color.primary.opacity(0.08))
+                        .cornerRadius(5)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 5)
+                                .stroke(Color.primary.opacity(0.15), lineWidth: 1)
+                        )
+                    Button(action: { showFormatReference.toggle() }) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .popover(isPresented: $showFormatReference, arrowEdge: .trailing) {
+                        let references: [(String, String)] = [
+                            ("{s}", "session %"), ("{w}", "week %"),
+                            ("{sr}", "session reset"), ("{wr}", "week day"),
+                            ("{wd}", "days elapsed"), ("{wl}", "days left"),
+                            ("{srt}", "session date"), ("{wrt}", "week date"),
+                        ]
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Format variables")
+                                .font(.system(size: 10, weight: .semibold))
+                            ForEach(references, id: \.0) { ref in
+                                HStack(spacing: 4) {
+                                    Text(ref.0)
+                                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    Text(ref.1)
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                        .padding(10)
+                    }
+                }
             }
         }
+        .padding(6)
+        .background(Color.primary.opacity(0.04))
+        .cornerRadius(6)
     }
 }
