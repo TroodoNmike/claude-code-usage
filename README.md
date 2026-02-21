@@ -65,7 +65,27 @@ The widget uses an **MVVM architecture** with **Swift 6 structured concurrency**
 3. **UsageViewModel** publishes state changes on a 10-second polling interval
 4. **SwiftUI views** react to state updates and render the floating panel
 
-Color coding uses fixed thresholds for session usage (green < 50%, orange 50–79%, red 80%+) and pace-based logic for weekly usage that compares actual usage against expected usage for the current day in the billing cycle.
+Color coding uses fixed thresholds for session usage (green < 50%, orange 50–79%, red 80%+) and **pace-based logic** for weekly usage that compares actual usage against expected usage for the current day in the billing cycle.
+
+### Weekly Pace-Based Color Coding
+
+The weekly quota resets every 7 days. If you spread usage evenly, the ideal pace looks like this:
+
+| Day | Daily % | Cumulative % |
+|-----|---------|--------------|
+| 1   | 14.29%  | 14.29%       |
+| 2   | 14.29%  | 28.57%       |
+| 3   | 14.29%  | 42.86%       |
+| 4   | 14.29%  | 57.14%       |
+| 5   | 14.29%  | 71.43%       |
+| 6   | 14.29%  | 85.71%       |
+| 7   | 14.29%  | 100%         |
+
+This matters because raw percentage alone doesn't tell you if you're on track. Using 50% of your quota sounds high — but if you're on day 4, you're actually *under* pace (expected: 57.14%). Conversely, hitting 50% on day 2 means you're burning through quota almost twice as fast as sustainable.
+
+The widget uses this to color the weekly usage indicator:
+- **Green** — you're at or below the expected pace for the current day
+- **Orange/Red** — you're ahead of pace and risk running out before the weekly reset
 
 ## ⚙️ Custom Status Bar Formats
 
