@@ -14,12 +14,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Menu bar status item
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        updateStatusItemTitle(state: viewModel.state, style: viewModel.statusBarStyle, sessionCountdown: viewModel.sessionCountdown, weekCountdown: viewModel.weekCountdown)
+        updateStatusItemTitle(state: viewModel.state, style: viewModel.statusBarStyle, sessionCountdown: viewModel.sessionCountdown, weekCountdown: viewModel.weekCountdown, customFormat: viewModel.customFormat, weekDaysLeft: viewModel.weekDaysLeft, sessionResetDateTime: viewModel.sessionResetDateTime, weekResetDateTime: viewModel.weekResetDateTime)
 
-        if let button = statusItem.button {
-            button.target = self
-            button.action = #selector(statusItemClicked)
-        }
+        let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: "Toggle Widget", action: #selector(statusItemClicked), keyEquivalent: ""))
+        menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "q"))
+        statusItem.menu = menu
 
         panel = UsageWidgetPanel()
 
@@ -45,11 +46,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panel.appearance = dark ? NSAppearance(named: .darkAqua) : NSAppearance(named: .aqua)
         }.store(in: &cancellables)
 
-        // Update menu bar when state, style, or countdowns change
+        // Update menu bar when state, style, countdowns, or custom format change
         viewModel.$state
             .combineLatest(viewModel.$statusBarStyle, viewModel.$sessionCountdown, viewModel.$weekCountdown)
-            .sink { [weak self] state, style, sessionCD, weekCD in
-                self?.updateStatusItemTitle(state: state, style: style, sessionCountdown: sessionCD, weekCountdown: weekCD)
+            .combineLatest(viewModel.$customFormat, viewModel.$weekDaysLeft)
+            .combineLatest(viewModel.$sessionResetDateTime, viewModel.$weekResetDateTime)
+            .sink { [weak self] combo in
+                let ((inner, customFormat, weekDaysLeft), sessionRT, weekRT) = combo
+                let (state, style, sessionCD, weekCD) = inner
+                self?.updateStatusItemTitle(state: state, style: style, sessionCountdown: sessionCD, weekCountdown: weekCD, customFormat: customFormat, weekDaysLeft: weekDaysLeft, sessionResetDateTime: sessionRT, weekResetDateTime: weekRT)
             }
             .store(in: &cancellables)
 
@@ -60,7 +65,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         state: UsageViewModel.State,
         style: UsageViewModel.StatusBarStyle,
         sessionCountdown: String?,
-        weekCountdown: String?
+        weekCountdown: String?,
+        customFormat: String,
+        weekDaysLeft: Int?,
+        sessionResetDateTime: String? = nil,
+        weekResetDateTime: String? = nil
     ) {
         guard let button = statusItem?.button else { return }
         let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
@@ -69,25 +78,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .loading:
             button.title = "⏳"
         case .loaded(let data):
-            let text: String
-            switch style {
-            case .sessionOnly:
-                text = data.sessionPct.map { "\($0)%" } ?? "—"
-            case .sessionAndWeek:
-                let s = data.sessionPct.map { "\($0)%" } ?? "—"
-                let w = data.weekPct.map { "\($0)%" } ?? "—"
-                text = "S:\(s) W:\(w)"
-            case .withCountdowns:
-                let s = data.sessionPct.map { "\($0)%" } ?? "—"
-                let sReset = sessionCountdown ?? "?"
-                let w = data.weekPct.map { "\($0)%" } ?? "—"
-                let wReset = weekCountdown ?? "?"
-                text = "S:\(s)(\(sReset)) W:\(w)(\(wReset))"
-            }
+            let format = style == .custom ? customFormat : style.formatString
+            let text = UsageViewModel.formatMenuBar(format, data: data, sessionCountdown: sessionCountdown, weekCountdown: weekCountdown, weekDaysLeft: weekDaysLeft, sessionResetDateTime: sessionResetDateTime, weekResetDateTime: weekResetDateTime)
             button.attributedTitle = NSAttributedString(string: text, attributes: [.font: font])
         case .error:
             button.title = "⚠️"
         }
+    }
+
+    @objc private func quitApp() {
+        NSApplication.shared.terminate(nil)
     }
 
     @objc private func statusItemClicked() {

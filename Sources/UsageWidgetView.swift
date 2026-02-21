@@ -11,7 +11,6 @@ struct UsageWidgetView: View {
                 Text("Claude Usage")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.primary)
-                Spacer()
                 Button(action: { viewModel.refresh() }) {
                     if viewModel.isRefreshing {
                         ProgressView()
@@ -26,6 +25,7 @@ struct UsageWidgetView: View {
                 .buttonStyle(.plain)
                 .disabled(viewModel.isRefreshing)
                 .help("Restart tmux session")
+                Spacer()
                 Button(action: onTogglePin) {
                     Image(systemName: viewModel.isPinned ? "pin.fill" : "pin")
                         .font(.system(size: 11))
@@ -55,13 +55,15 @@ struct UsageWidgetView: View {
                 usageSection(
                     label: "Session",
                     pct: data.sessionPct,
-                    countdown: viewModel.sessionCountdown
+                    countdown: viewModel.sessionCountdown,
+                    resetDateTime: viewModel.sessionResetDateTime
                 )
                 usageSection(
                     label: "Week",
                     pct: data.weekPct,
                     countdown: viewModel.weekCountdown,
-                    daysLeft: viewModel.weekDaysLeft
+                    daysLeft: viewModel.weekDaysLeft,
+                    resetDateTime: viewModel.weekResetDateTime
                 )
 
                 if viewModel.showLastUpdated {
@@ -82,19 +84,35 @@ struct UsageWidgetView: View {
                 .font(.system(size: 10))
                 .foregroundColor(.secondary)
 
-                HStack(spacing: 4) {
-                    Text("Menu bar:")
-                        .font(.system(size: 10))
-                        .foregroundColor(.secondary)
-                    Picker("", selection: $viewModel.statusBarStyle) {
-                        ForEach(UsageViewModel.StatusBarStyle.allCases, id: \.self) { style in
-                            Text(style.label).tag(style)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        Text("Menu bar:")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                        Picker("", selection: $viewModel.statusBarStyle) {
+                            ForEach(UsageViewModel.StatusBarStyle.allCases, id: \.self) { style in
+                                Text(style.label).tag(style)
+                            }
                         }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .controlSize(.mini)
+                        .font(.system(size: 10))
                     }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-                    .controlSize(.mini)
-                    .font(.system(size: 10))
+                    if viewModel.statusBarStyle != .custom {
+                        Text(viewModel.statusBarStyle.preview)
+                            .font(.system(size: 9, design: .monospaced))
+                            .foregroundColor(.secondary)
+                    }
+                    if viewModel.statusBarStyle == .custom {
+                        TextField("Format", text: $viewModel.customFormat)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 10, design: .monospaced))
+                        Text("{s} session %  {w} week %\n{sr} session reset  {wr} week day\n{wd} days elapsed  {wl} days left\n{srt} session reset date  {wrt} week reset date")
+                            .font(.system(size: 9))
+                            .foregroundColor(.secondary)
+                            .lineSpacing(2)
+                    }
                 }
 
             case .error(let message):
@@ -108,11 +126,11 @@ struct UsageWidgetView: View {
             }
         }
         .padding(12)
-        .frame(width: Config.windowWidth, height: Config.windowHeight)
+        .frame(width: Config.windowWidth, height: viewModel.statusBarStyle == .custom ? Config.windowHeightCustom : Config.windowHeight)
     }
 
     @ViewBuilder
-    private func usageSection(label: String, pct: Int?, countdown: String?, daysLeft: Int? = nil) -> some View {
+    private func usageSection(label: String, pct: Int?, countdown: String?, daysLeft: Int? = nil, resetDateTime: String? = nil) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack {
                 Text(label)
@@ -133,9 +151,16 @@ struct UsageWidgetView: View {
             }
             if let countdown {
                 let prefix = daysLeft != nil ? "Day" : "Resets in"
-                Text("\(prefix) \(countdown)")
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
+                HStack(spacing: 4) {
+                    Text("\(prefix) \(countdown)")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                    if let resetDateTime {
+                        Text("(\(resetDateTime))")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary.opacity(0.7))
+                    }
+                }
             }
         }
     }

@@ -10,7 +10,8 @@ enum Config {
     static let usageKeyDelay: TimeInterval = 0.3
 
     static let windowWidth: CGFloat = 220
-    static let windowHeight: CGFloat = 200
+    static let windowHeight: CGFloat = 210
+    static let windowHeightCustom: CGFloat = 260
 
     static func usageColor(for pct: Int) -> Color {
         if pct >= 80 { return Color(red: 1.0, green: 0.24, blue: 0.24) }

@@ -134,6 +134,87 @@ enum UsageParser {
         return cal.dateComponents([.day], from: today, to: resetDate).day ?? 0
     }
 
+    /// Parse session reset string into an absolute Date
+    static func sessionResetDate(_ resetStr: String) -> Date? {
+        let tzPattern = /\(([^)]+)\)/
+        let tzMatch = resetStr.firstMatch(of: tzPattern)
+        let clean = resetStr.replacing(/\s*\(.*?\)\s*$/, with: "").trimmingCharacters(in: .whitespaces)
+        let timePattern = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)/
+        guard let match = clean.firstMatch(of: timePattern) else { return nil }
+        guard let parsedHour = Int(match.1) else { return nil }
+        var hour = parsedHour
+        let minute = match.2.flatMap { Int($0) } ?? 0
+        let ampm = String(match.3).lowercased()
+        if ampm == "pm" && hour != 12 { hour += 12 }
+        else if ampm == "am" && hour == 12 { hour = 0 }
+
+        let tz: TimeZone?
+        if let tzMatch { tz = TimeZone(identifier: String(tzMatch.1)) } else { tz = nil }
+
+        var cal = Calendar.current
+        if let tz { cal.timeZone = tz }
+
+        let now = Date()
+        var components = cal.dateComponents([.year, .month, .day], from: now)
+        components.hour = hour
+        components.minute = minute
+        components.second = 0
+        guard var resetTime = cal.date(from: components) else { return nil }
+        if resetTime <= now {
+            guard let next = cal.date(byAdding: .day, value: 1, to: resetTime) else { return nil }
+            resetTime = next
+        }
+        return resetTime
+    }
+
+    /// Parse week reset string into an absolute Date
+    static func weekResetDate(_ resetStr: String) -> Date? {
+        let tzPattern = /\(([^)]+)\)/
+        let tzMatch = resetStr.firstMatch(of: tzPattern)
+        let clean = resetStr.replacing(/\s*\(.*?\)\s*$/, with: "")
+
+        let datePattern = /([A-Z][a-z]{2}\s+\d{1,2})/
+        guard let dateMatch = clean.firstMatch(of: datePattern) else { return nil }
+
+        let timePattern = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)/
+        let timeParts = clean.firstMatch(of: timePattern)
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        guard let parsed = formatter.date(from: String(dateMatch.1)) else { return nil }
+
+        let tz: TimeZone?
+        if let tzMatch { tz = TimeZone(identifier: String(tzMatch.1)) } else { tz = nil }
+
+        var cal = Calendar.current
+        if let tz { cal.timeZone = tz }
+
+        let today = cal.startOfDay(for: Date())
+        var comps = cal.dateComponents([.month, .day], from: parsed)
+        comps.year = cal.component(.year, from: today)
+
+        var hour = 0
+        var minute = 0
+        if let timeParts {
+            hour = Int(timeParts.1) ?? 0
+            minute = timeParts.2.flatMap { Int($0) } ?? 0
+            let ampm = String(timeParts.3).lowercased()
+            if ampm == "pm" && hour != 12 { hour += 12 }
+            else if ampm == "am" && hour == 12 { hour = 0 }
+        }
+        comps.hour = hour
+        comps.minute = minute
+
+        guard var resetDate = cal.date(from: comps) else { return nil }
+        if resetDate < Date() {
+            comps.year = cal.component(.year, from: today) + 1
+            guard let nextYear = cal.date(from: comps) else { return nil }
+            resetDate = nextYear
+        }
+        return resetDate
+    }
+
     /// Format days left as "3/7" (current day of cycle)
     static func weekDayLabel(daysLeft: Int) -> String {
         let dayNumber = 7 - daysLeft + 1

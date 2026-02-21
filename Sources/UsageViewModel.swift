@@ -12,19 +12,74 @@ final class UsageViewModel: ObservableObject {
     @Published var sessionCountdown: String?
     @Published var weekCountdown: String?
     @Published var weekDaysLeft: Int?
+    @Published var sessionResetDateTime: String?
+    @Published var weekResetDateTime: String?
     @Published var lastUpdatedAgo: String = ""
     @Published var isPinned = true
 
-    enum StatusBarStyle: Int, CaseIterable, Sendable {
-        case sessionOnly = 0
-        case sessionAndWeek = 1
-        case withCountdowns = 2
+    enum StatusBarStyle: Equatable, Hashable, Sendable {
+        case sessionOnly
+        case sessionAndWeek
+        case withCountdowns
+        case compact
+        case detailed
+        case custom
 
         var label: String {
             switch self {
-            case .sessionOnly: "Session %"
-            case .sessionAndWeek: "Session + Week %"
-            case .withCountdowns: "% + Countdowns"
+            case .sessionOnly: "Session only"
+            case .sessionAndWeek: "Session + Week"
+            case .withCountdowns: "With timers"
+            case .compact: "Compact"
+            case .detailed: "Detailed"
+            case .custom: "Custom..."
+            }
+        }
+
+        static let allCases: [StatusBarStyle] = [.sessionOnly, .sessionAndWeek, .withCountdowns, .compact, .detailed, .custom]
+
+        var intValue: Int {
+            switch self {
+            case .sessionOnly: 0
+            case .sessionAndWeek: 1
+            case .withCountdowns: 2
+            case .custom: 3
+            case .compact: 4
+            case .detailed: 5
+            }
+        }
+
+        init(intValue: Int) {
+            switch intValue {
+            case 0: self = .sessionOnly
+            case 1: self = .sessionAndWeek
+            case 2: self = .withCountdowns
+            case 3: self = .custom
+            case 4: self = .compact
+            case 5: self = .detailed
+            default: self = .sessionOnly
+            }
+        }
+
+        var preview: String {
+            switch self {
+            case .sessionOnly: "50%"
+            case .sessionAndWeek: "S:50% W:75%"
+            case .withCountdowns: "S:50%(2h) W:75%(3/7)"
+            case .compact: "50%|75% (4/7)"
+            case .detailed: "Session:50% resets 2h | Week:75% day 3/7"
+            case .custom: ""
+            }
+        }
+
+        var formatString: String {
+            switch self {
+            case .sessionOnly: "{s}%"
+            case .sessionAndWeek: "S:{s}% W:{w}%"
+            case .withCountdowns: "S:{s}%({sr}) W:{w}%({wr})"
+            case .compact: "{s}%|{w}% ({wd}/7)"
+            case .detailed: "Session:{s}% resets {sr} | Week:{w}% day {wr}"
+            case .custom: ""
             }
         }
     }
@@ -36,14 +91,40 @@ final class UsageViewModel: ObservableObject {
         didSet { UserDefaults.standard.set(showLastUpdated, forKey: "showLastUpdated") }
     }
     @Published var statusBarStyle: StatusBarStyle {
-        didSet { UserDefaults.standard.set(statusBarStyle.rawValue, forKey: "statusBarStyle") }
+        didSet { UserDefaults.standard.set(statusBarStyle.intValue, forKey: "statusBarStyle") }
+    }
+    @Published var customFormat: String {
+        didSet { UserDefaults.standard.set(customFormat, forKey: "customFormat") }
     }
 
     init() {
         let defaults = UserDefaults.standard
         self.forceDarkMode = defaults.object(forKey: "forceDarkMode") as? Bool ?? true
         self.showLastUpdated = defaults.object(forKey: "showLastUpdated") as? Bool ?? true
-        self.statusBarStyle = StatusBarStyle(rawValue: defaults.integer(forKey: "statusBarStyle")) ?? .sessionOnly
+        self.statusBarStyle = StatusBarStyle(intValue: defaults.integer(forKey: "statusBarStyle"))
+        self.customFormat = defaults.string(forKey: "customFormat") ?? "S:{s}% W:{w}%"
+    }
+
+    static func formatMenuBar(
+        _ format: String,
+        data: UsageData,
+        sessionCountdown: String?,
+        weekCountdown: String?,
+        weekDaysLeft: Int?,
+        sessionResetDateTime: String? = nil,
+        weekResetDateTime: String? = nil
+    ) -> String {
+        var result = format
+        result = result.replacingOccurrences(of: "{s}", with: data.sessionPct.map { "\($0)" } ?? "—")
+        result = result.replacingOccurrences(of: "{w}", with: data.weekPct.map { "\($0)" } ?? "—")
+        result = result.replacingOccurrences(of: "{sr}", with: sessionCountdown ?? "?")
+        result = result.replacingOccurrences(of: "{wr}", with: weekCountdown ?? "?")
+        let daysGone = weekDaysLeft.map { 7 - $0 + 1 }
+        result = result.replacingOccurrences(of: "{wd}", with: daysGone.map { "\($0)" } ?? "?")
+        result = result.replacingOccurrences(of: "{wl}", with: weekDaysLeft.map { "\($0)" } ?? "?")
+        result = result.replacingOccurrences(of: "{srt}", with: sessionResetDateTime ?? "?")
+        result = result.replacingOccurrences(of: "{wrt}", with: weekResetDateTime ?? "?")
+        return result
     }
 
     @Published var isRefreshing = false
@@ -140,14 +221,28 @@ final class UsageViewModel: ObservableObject {
         }
     }
 
+    private static let resetDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d, h:mma"
+        f.amSymbol = "am"
+        f.pmSymbol = "pm"
+        return f
+    }()
+
     private func updateCountdowns(from data: UsageData) {
         if let raw = data.sessionResetRaw {
             sessionCountdown = UsageParser.timeUntilSessionReset(raw)
+            if let date = UsageParser.sessionResetDate(raw) {
+                sessionResetDateTime = Self.resetDateFormatter.string(from: date)
+            }
         }
         if let raw = data.weekResetRaw {
             if let days = UsageParser.daysLeftUntilReset(raw) {
                 weekDaysLeft = days
                 weekCountdown = UsageParser.weekDayLabel(daysLeft: days)
+            }
+            if let date = UsageParser.weekResetDate(raw) {
+                weekResetDateTime = Self.resetDateFormatter.string(from: date)
             }
         }
     }
