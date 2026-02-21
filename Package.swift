@@ -9,5 +9,10 @@ let package = Package(
             name: "ClaudeUsageWidget",
             path: "Sources"
         ),
+        .testTarget(
+            name: "ClaudeUsageWidgetTests",
+            dependencies: ["ClaudeUsageWidget"],
+            path: "Tests"
+        ),
     ]
 )
