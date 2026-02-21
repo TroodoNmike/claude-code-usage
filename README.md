@@ -2,35 +2,51 @@
 
 A macOS menu bar widget that monitors your [Claude Code](https://claude.ai/code) API usage in real time. Displays session and weekly quota percentages with countdown timers in a floating always-on-top panel.
 
-<!-- ![Screenshot](screenshot.png) -->
+<!-- ![Demo](demo.gif) -->
 
-## Features
+## ✨ Features
 
-- **Session & weekly usage monitoring** — polls Claude Code's `/usage` command automatically
-- **Pace-based color coding** — weekly usage color reflects whether you're ahead or behind expected pace in the billing cycle
-- **Countdown timers** — live countdowns to session and weekly quota resets
-- **Floating panel** — always-on-top window so usage stays visible while you work
-- **Custom status bar formats** — configurable menu bar display
-- **Menu bar integration** — quick access via macOS status bar with quit menu
+- 📊 **Session & weekly usage monitoring** — polls Claude Code's `/usage` command automatically
+- 🎨 **Pace-based color coding** — weekly usage color reflects whether you're ahead or behind expected pace in the billing cycle
+- ⏱️ **Countdown timers** — live countdowns to session and weekly quota resets
+- 🪟 **Floating panel** — always-on-top window so usage stays visible while you work
+- ⚙️ **Custom status bar formats** — configurable menu bar display
+- 🖥️ **Menu bar integration** — quick access via macOS status bar with quit menu
 
-## Requirements
+## 📋 Requirements
 
 - macOS 14.0+
 - [tmux](https://github.com/tmux/tmux) installed and on your `PATH`
 - [Claude Code CLI](https://claude.ai/code) installed and authenticated
 
-## Installation
+### Installing tmux
 
 ```bash
-git clone https://github.com/anthropics/claude-code-usage.git
-cd claude-code-usage
-make build
-make run
+# Homebrew
+brew install tmux
 ```
 
-## How It Works
+For other installation methods, see the [tmux wiki](https://github.com/tmux/tmux/wiki/Installing).
 
-The widget uses an MVVM architecture with Swift 6 structured concurrency:
+## 🚀 Getting Started
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/anthropics/claude-code-usage.git
+   cd claude-code-usage
+   ```
+2. Build the project:
+   ```bash
+   make build
+   ```
+3. Run the widget:
+   ```bash
+   make run
+   ```
+
+## 💡 How It Works
+
+The widget uses an **MVVM architecture** with **Swift 6 structured concurrency**:
 
 1. **TmuxManager** (actor) creates an isolated tmux session and sends `/usage` keystrokes to Claude Code CLI
 2. **UsageParser** extracts usage percentages and reset times from the captured output via regex
@@ -39,7 +55,7 @@ The widget uses an MVVM architecture with Swift 6 structured concurrency:
 
 Color coding uses fixed thresholds for session usage (green < 50%, orange 50–79%, red 80%+) and pace-based logic for weekly usage that compares actual usage against expected usage for the current day in the billing cycle.
 
-## Build Commands
+## 🛠️ Build Commands
 
 | Command      | Description                |
 |-------------|----------------------------|
@@ -48,6 +64,10 @@ Color coding uses fixed thresholds for session usage (green < 50%, orange 50–7
 | `make test`  | Run unit tests             |
 | `make clean` | Remove build artifacts     |
 
-## License
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to open issues and pull requests on [GitHub](https://github.com/anthropics/claude-code-usage).
+
+## 📄 License
 
 [MIT](LICENSE)
