@@ -30,13 +30,16 @@ final class UsageWidgetPanel: NSPanel {
         isOpaque = false
         backgroundColor = .windowBackgroundColor
 
-        if let screen = NSScreen.main {
-            let screenFrame = screen.visibleFrame
-            let origin = NSPoint(
-                x: screenFrame.maxX - Config.windowWidth - 20,
-                y: screenFrame.maxY - Config.windowHeight - 20
-            )
-            setFrameOrigin(origin)
+        // Restore last known position, or default to top-right corner
+        if !setFrameAutosaveName("ClaudeUsagePanel") || !setFrameUsingName("ClaudeUsagePanel") {
+            if let screen = NSScreen.main {
+                let screenFrame = screen.visibleFrame
+                let origin = NSPoint(
+                    x: screenFrame.maxX - Config.windowWidth - 20,
+                    y: screenFrame.maxY - Config.windowHeight - 20
+                )
+                setFrameOrigin(origin)
+            }
         }
     }
 
