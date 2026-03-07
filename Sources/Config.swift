@@ -5,7 +5,7 @@ enum Config {
     static let tmuxPaneWidth = 120
     static let tmuxPaneHeight = 40
 
-    static let usagePollInterval: TimeInterval = 10
+    static let usagePollInterval: TimeInterval = 60
     static let usageRefreshDelay: TimeInterval = 2.0
     static let usageKeyDelay: TimeInterval = 0.3
 
